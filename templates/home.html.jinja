@@ -1,0 +1,144 @@
+{% extends 'base.html.jinja' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{#
+<div class="row mb-1">
+  <div class="col">
+    <canvas id="temperature"></canvas>
+  </div>
+  <div class="col">
+    <canvas id="pressure"></canvas>
+  </div>
+  <div class="col">
+    <canvas id="humidity"></canvas>
+  </div>
+</div>
+#}
+
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="temperature"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="pressure"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="humidity"></canvas>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col">
+    <div class="table-responsive">
+      <table class="table table-dark table-striped table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Timestamp</th>
+            <th scope="col">Temperature</th>
+            <th scope="col">Pressure</th>
+            <th scope="col">Humidity</th>
+            <th scope="col">Light</th>
+            <th scope="col">Oxidised</th>
+            <th scope="col">Reduced</th>
+            <th scope="col">nh3</th>
+            <th scope="col">pm1</th>
+            <th scope="col">pm25</th>
+            <th scope="col">pm10</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+          <tr>
+            <th scope="row">{{ row.ts }}</th>
+            <td>{{ row.temperature }}</td>
+            <td>{{ row.pressure }}</td>
+            <td>{{ row.humidity }}</td>
+            <td>{{ row.light }}</td>
+            <td>{{ row.oxidised }}</td>
+            <td>{{ row.reduced }}</td>
+            <td>{{ row.nh3 }}</td>
+            <td>{{ row.pm1 }}</td>
+            <td>{{ row.pm25 }}</td>
+            <td>{{ row.pm10 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.min.js" integrity="sha256-cHVO4dqZfamRhWD7s4iXyaXWVK10odD+qp4xidFzqTI=" crossorigin="anonymous"></script>
+{#
+<script src="https://cdn.jsdelivr.net/npm/luxon@2/build/global/luxon.min.js" integrity="sha256-DIsAGD2EF8Qq2PCH9yzX/yt9FliJfWf+aGcdgR6tKwo=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1/dist/chartjs-adapter-luxon.min.js" integrity="sha256-tOhXNe/Ue+TjR33s/CryFYOGMwNfkTjTuvM4LEOAHzc=" crossorigin="anonymous"></script>
+#}
+<script>
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+fetch('/api/history?' + new URLSearchParams({tz}))
+  .then(response => response.json())
+  .then(data => data.data)
+  .then(sensorData => {
+    console.log(sensorData);
+    const temperature = new Chart('temperature', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Temperature',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'temperature'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    const humidity = new Chart('humidity', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Humidity',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'humidity'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    const pressure = new Chart('pressure', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Pressure',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'pressure'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

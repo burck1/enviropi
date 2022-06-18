@@ -1,0 +1,324 @@
+{% extends 'base.html.jinja' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="temperature-humidity"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="oxidised-reduced"></canvas>
+  </div>
+</div>
+{#
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="temperature"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="humidity"></canvas>
+  </div>
+</div>
+#}
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="light"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="pressure"></canvas>
+  </div>
+</div>
+{#
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="oxidised"></canvas>
+  </div>
+</div>
+<div class="row mb-1 justify-content-center">
+  <div class="col-6">
+    <canvas id="reduced"></canvas>
+  </div>
+</div>
+#}
+
+<div class="row">
+  <div class="col">
+    <div class="table-responsive">
+      <table class="table table-dark table-striped table-hover">
+        <thead>
+          <tr>
+            <th scope="col">Timestamp</th>
+            <th scope="col">Temperature</th>
+            <th scope="col">Humidity</th>
+            <th scope="col">Pressure</th>
+            <th scope="col">Light</th>
+            <th scope="col">Oxidised</th>
+            <th scope="col">Reduced</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+          <tr>
+            <th scope="row">{{ row.ts }}</th>
+            <td>{{ row.temp }}</td>
+            <td>{{ row.hum }}</td>
+            <td>{{ row.pres }}</td>
+            <td>{{ row.light }}</td>
+            <td>{{ row.oxi }}</td>
+            <td>{{ row.reduc }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3/dist/chart.min.js" integrity="sha256-cHVO4dqZfamRhWD7s4iXyaXWVK10odD+qp4xidFzqTI=" crossorigin="anonymous"></script>
+{#
+<script src="https://cdn.jsdelivr.net/npm/luxon@2/build/global/luxon.min.js" integrity="sha256-DIsAGD2EF8Qq2PCH9yzX/yt9FliJfWf+aGcdgR6tKwo=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1/dist/chartjs-adapter-luxon.min.js" integrity="sha256-tOhXNe/Ue+TjR33s/CryFYOGMwNfkTjTuvM4LEOAHzc=" crossorigin="anonymous"></script>
+#}
+<script>
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+const CHART_COLORS = {
+  red: 'rgb(255, 99, 132)',
+  orange: 'rgb(255, 159, 64)',
+  yellow: 'rgb(255, 205, 86)',
+  green: 'rgb(75, 192, 192)',
+  blue: 'rgb(54, 162, 235)',
+  purple: 'rgb(153, 102, 255)',
+  grey: 'rgb(201, 203, 207)',
+};
+const CHART_COLORS_TRANSPARENT = {
+  red: 'rgba(255, 99, 132, 0.5)',
+  orange: 'rgba(255, 159, 64, 0.5)',
+  yellow: 'rgba(255, 205, 86, 0.5)',
+  green: 'rgba(75, 192, 192, 0.5)',
+  blue: 'rgba(54, 162, 235, 0.5)',
+  purple: 'rgba(153, 102, 255, 0.5)',
+  grey: 'rgba(201, 203, 207, 0.5)',
+};
+fetch('/api/history?' + new URLSearchParams({tz, interval: 'hourly'}))
+  .then(response => response.json())
+  .then(data => data.data)
+  .then(sensorData => {
+    // console.log(sensorData);
+    const temperatureHumidity = new Chart('temperature-humidity', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Temperature',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'temp'
+          },
+          borderColor: CHART_COLORS.red,
+          backgroundColor: CHART_COLORS_TRANSPARENT.red,
+          yAxisID: 'y'
+        }, {
+          label: 'Humidity',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'hum'
+          },
+          borderColor: CHART_COLORS.blue,
+          backgroundColor: CHART_COLORS_TRANSPARENT.blue,
+          yAxisID: 'y1',
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts',
+        },
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
+            },
+          },
+        },
+      },
+    });
+    const oxidisedReduced = new Chart('oxidised-reduced', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Oxidised',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'oxi'
+          },
+          borderColor: CHART_COLORS.red,
+          backgroundColor: CHART_COLORS_TRANSPARENT.red,
+          yAxisID: 'y'
+        }, {
+          label: 'Reduced',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'reduc'
+          },
+          borderColor: CHART_COLORS.blue,
+          backgroundColor: CHART_COLORS_TRANSPARENT.blue,
+          yAxisID: 'y1',
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts',
+        },
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        stacked: false,
+        scales: {
+          y: {
+            type: 'linear',
+            display: true,
+            position: 'left',
+          },
+          y1: {
+            type: 'linear',
+            display: true,
+            position: 'right',
+            grid: {
+              drawOnChartArea: false, // only want the grid lines for one axis to show up
+            },
+          },
+        },
+      },
+    });
+    {#
+    const temperature = new Chart('temperature', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Temperature',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'temp'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    const humidity = new Chart('humidity', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Humidity',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'hum'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    #}
+    const pressure = new Chart('pressure', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Pressure',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'pres'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    const light = new Chart('light', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Light',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'light'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    {#
+    const oxidised = new Chart('oxidised', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Oxidised',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'oxi'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    const reduced = new Chart('reduced', {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Reduced',
+          data: sensorData,
+          parsing: {
+            yAxisKey: 'reduc'
+          }
+        }]
+      },
+      options: {
+        parsing: {
+          xAxisKey: 'ts'
+        }
+      }
+    });
+    #}
+  });
+</script>
+{% endblock %}
